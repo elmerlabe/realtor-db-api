@@ -13,45 +13,45 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 app.secret_key = "1234"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://mzrnhsngpzhail:8fff0c777d10daa3dea6ec53594028daaf11fa66c82bb85a8b429035d74d1eaa@ec2-3-219-19-205.compute-1.amazonaws.com:5432/d2065pa7oj1vo7'
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost:5432/realtor-db'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://mzrnhsngpzhail:8fff0c777d10daa3dea6ec53594028daaf11fa66c82bb85a8b429035d74d1eaa@ec2-3-219-19-205.compute-1.amazonaws.com:5432/d2065pa7oj1vo7'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost:5432/realtors-db'
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://everreach_staging:zytjiv-peprib-fyvvU5@everreach.nell.sh/realtors-db"
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 CORS(app)
 db = SQLAlchemy(app)
 
 
-
-class User(db.Model):
+class Users(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(200), nullable=False)
     name = db.Column(db.String(50))
-    date_created = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    createdAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    updatedAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
 
-class Realtor(db.Model):
+class Agents(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(50))
-    full_name = db.Column(db.String(50))
-    first_name = db.Column(db.String(50))
-    middle_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    suffix = db.Column(db.String(10))
-    office_name = db.Column(db.String(200))
-    office_address_1 = db.Column(db.String(200))
-    office_address_2 = db.Column(db.String(200))
-    office_city = db.Column(db.String(100))
-    office_state = db.Column(db.String(10))
-    office_zip = db.Column(db.String(10))
-    office_country = db.Column(db.String(50))
-    office_phone = db.Column(db.String(50))
-    office_fax = db.Column(db.String(50))
-    cellphone = db.Column(db.String(50))
-    remarks = db.Column(db.String(100))
-    date_created = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    email = db.Column(db.String(255))
+    firstName = db.Column(db.String(255))
+    middleName = db.Column(db.String(255))
+    lastName = db.Column(db.String(255))
+    suffix = db.Column(db.String(255))
+    officeName = db.Column(db.String(255))
+    officeAddress1 = db.Column(db.String(255))
+    officeAddress2 = db.Column(db.String(255))
+    officeCity = db.Column(db.String(255))
+    officeState = db.Column(db.String(255))
+    officeZip = db.Column(db.String(255))
+    officeCountry = db.Column(db.String(255))
+    officePhone = db.Column(db.String(255))
+    officeFax = db.Column(db.String(255))
+    cellPhone = db.Column(db.String(255))
+    createdAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    updatedAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
     def __repr__(self):
-        return '<Realtor %r>' % self.email
+        return '<Agents %r>' % self.email
 
 
 
@@ -67,7 +67,7 @@ def token_required(f):
             return {"message": "a valid token is missing"}
         try:
             data = jwt.decode(token, app.secret_key, algorithms=["HS256"])
-            cUser = User.query.get(data['id'])
+            cUser = Users.query.get(data['id'])
         except:
             return {'message': 'token is invalid'}
 
@@ -87,7 +87,7 @@ def signin():
     username = d['username']
     password = d['password']
 
-    user = User.query.filter_by(username=username).first()
+    user = Users.query.filter_by(username=username).first()
     if user:
         if check_password_hash(user.password, password):
             token = jwt.encode({'id':user.id}, app.secret_key, "HS256")
@@ -108,13 +108,13 @@ def getUserFromToken(cUser):
 def getAgentFromId(cUser):
     d = request.get_json()
     id = d.get('id')
-    r = Realtor.query.get(id)
+    r = Agents.query.get(id)
 
     obj = []
-    obj.insert(0, {"_id": r.id, "email": r.email, "full_name": r.full_name, "first_name": r.first_name, "middle_name": r.middle_name, "last_name": r.last_name,
-                    "suffix": r.suffix, "office_name": r.office_name, "office_address_1": r.office_address_1, "office_address_2": r.office_address_2,
-                    "office_city": r.office_city, "office_state": r.office_state, "office_zip": r.office_zip, "office_country": r.office_country,
-                    "office_phone": r.office_phone, "office_fax": r.office_fax, "cellphone": r.cellphone, "remarks": r.remarks, "date_created":r.date_created})
+    obj.insert(0, {"_id": r.id, "email": r.email, "firstName": r.firstName, "middleName": r.middleName, "lastName": r.lastName,
+                    "suffix": r.suffix, "officeName": r.officeName, "officeAddress1": r.officeAddress1, "officeAddress2": r.officeAddress2,
+                    "officeCity": r.officeCity, "officeState": r.officeState, "officeZip": r.officeZip, "officeCountry": r.officeCountry,
+                    "officePhone": r.officePhone, "officeFax": r.officeFax, "cellPhone": r.cellPhone, "createdAt":r.createdAt})
 
     return {"result": True, "data": obj}
 
@@ -126,28 +126,58 @@ def updateAgentInfo(cUser):
     data = d.get('data')
     id = d.get('id')
 
-    r = Realtor.query.get(id)
+    r = Agents.query.get(id)
 
-    r.email = data[0]['value']
-    r.full_name = data[1]['value']
-    r.first_name = data[2]['value']
-    r.middle_name = data[3]['value']
-    r.last_name = data[4]['value']
-    r.suffix = data[5]['value']
-    r.office_name = data[6]['value']
-    r.office_address_1 = data[7]['value']
-    r.office_address_2 = data[8]['value']
-    r.office_city = data[9]['value']
-    r.office_state = data[10]['value']
-    r.office_zip = data[11]['value']
-    r.office_country = data[12]['value']
-    r.office_phone = data[13]['value']
-    r.office_fax = data[14]['value']
-    r.cellphone = data[15]['value']
+    r.email = data['email']
+    r.firstName = data['firstName']
+    r.middleName = data['middleName']
+    r.lastName = data['lastName']
+    r.suffix = data['suffix']
+    r.officeName = data['officeName']
+    r.officeAddress1 = data['officeAddress1']
+    r.officeAddress2 = data['officeAddress2']
+    r.officeCity = data['officeCity']
+    r.officeState = data['officeState']
+    r.officeZip = data['officeZip']
+    r.officeCountry = data['officeCountry']
+    r.officePhone = data['officePhone']
+    r.officeFax = data['officeFax']
+    r.cellPhone = data['cellPhone']
     db.session.commit()
 
 
     return {"result": True, "message": "Successfully Updated!"}
+
+
+@app.route("/removeAgent", methods=['POST'])
+@token_required
+def removeAgent(cUser):
+    d = request.get_json()
+    id = d.get("id")
+    agent = Agents.query.get(id)
+
+    db.session.delete(agent)
+    db.session.commit()
+    
+    return {"result": True, "message": "Successfully removed!"}
+
+
+@app.route("/addNewAgent", methods=["POST"])
+@token_required
+def addNewAgent(cUser):
+    data = request.get_json()
+    d = data.get('data')
+
+    agent = Agents(email = d['email'], firstName = d['firstName'],middleName = d['middleName'],
+                    lastName = d['lastName'],suffix = d['suffix'],officeName = d['officeName'],officeAddress1 = d['officeAddress1'],
+                    officeAddress2 = d['officeAddress2'],officeCity = d['officeCity'],officeState = d['officeState'],
+                    officeZip = d['officeZip'],officeCountry = d['officeCountry'],officePhone = d['officePhone'],
+                    officeFax = d['officeFax'],cellPhone = d['cellPhone'])
+    
+    
+    db.session.add(agent)
+    db.session.commit()
+    return {"result": True, "message": "New agent successfully added"}
 
 
 
@@ -157,21 +187,19 @@ def getRealtors(cUser):
     page = request.args.get("page", type=int)
     per_page = request.args.get("per_page", type=int)
     
-    realtors = Realtor.query.paginate(page=page, per_page=per_page)
-
-    print(per_page)
+    realtors = Agents.query.order_by(Agents.id).paginate(page=page, per_page=per_page)
 
     obj = []
     cnt = 0
 
-    realtors.items.sort(key=lambda x: x.full_name, reverse=True)
+    realtors.items.sort(key=lambda x: x.id, reverse=True)
 
     for r in realtors.items:
 
-        obj.insert(cnt, {"_id": r.id, "email": r.email, "full_name": r.full_name, "first_name": r.first_name, "middle_name": r.middle_name, "last_name": r.last_name,
-                        "suffix": r.suffix, "office_name": r.office_name, "office_address_1": r.office_address_1, "office_address_2": r.office_address_2,
-                        "office_city": r.office_city, "office_state": r.office_state, "office_zip": r.office_zip, "office_country": r.office_country,
-                        "office_phone": r.office_phone, "office_fax": r.office_fax, "cellphone": r.cellphone, "remarks": r.remarks, "date_created":r.date_created})
+        obj.insert(cnt, {"_id": r.id, "email": r.email, "firstName": r.firstName, "middleName": r.middleName, "lastName": r.lastName,
+                        "suffix": r.suffix, "officeName": r.officeName, "officeAddress1": r.officeAddress1, "officeAddress2": r.officeAddress2,
+                        "officeCity": r.officeCity, "officeState": r.officeState, "officeZip": r.officeZip, "officeCountry": r.officeCountry,
+                        "officePhone": r.officePhone, "officeFax": r.officeFax, "cellPhone": r.cellPhone, "createdAt":r.createdAt})
     
 
     return {"realtors":obj, "page":page, "pages":realtors.pages, "next_page":realtors.next_num, "prev_page": realtors.prev_num, "total": realtors.total}
@@ -180,23 +208,22 @@ def getRealtors(cUser):
 
 
 #Insert mockdata to database 
-'''with open("MOCKDATA/NationalRealtorFilePart1.csv", "r") as csv_file:
-    csv_reader = csv.DictReader(csv_file, delimiter=',')
+'''with open("MOCKDATA/Book1.csv", "r") as csv_file:
+    csv_reader = csv.DictReader(csv_file, delimiter=',')    
     cnt = 0
 
     for c in csv_reader:
-        if cnt < 5000:
-            cnt +=1
-            print(cnt)
-            realtor = Realtor(email=c['Email'], full_name=c['Full Name'], first_name=c['First Name'], middle_name=c['Middle Name'], last_name=c['Last Name'], 
-                              suffix=c['Suffix'], office_name=c['Office Name'], office_address_1=c['Office Address1'], office_address_2=c['Office Address2'],
-                              office_city=c['Office City'], office_state=c['Office State'], office_zip=c['Office Zip'], office_country=c['Office County'],
-                              office_phone=c['Office Phone'], office_fax=c['Office Fax'], cellphone=c['Cell Phone'], remarks="", date_created=datetime.now())
-
-            db.session.add(realtor)
-            db.session.commit()
-        else:
-            break
+        #if cnt < 100000:
+        cnt +=1
+        print(cnt)
+        realtor = Agents(email=c['Email'], firstName=c['First Name'], middleName=c['Middle Name'], lastName=c['Last Name'], 
+                          suffix=c['Suffix'], officeName=c['Office Name'], officeAddress1=c['Office Address1'], officeAddress2=c['Office Address2'],
+                          officeCity=c['Office City'], officeState=c['Office State'], officeZip=c['Office Zip'], officeCountry=c['Office County'],
+                          officePhone=c['Office Phone'], officeFax=c['Office Fax'], cellPhone=c['Cell Phone'], createdAt=datetime.now())
+        db.session.add(realtor)
+        db.session.commit()
+        #else:
+        #    break
 
     print("Total realtors added: ")
     print(cnt)'''
