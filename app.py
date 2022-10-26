@@ -1,5 +1,6 @@
 from asyncio import constants
 import csv
+import flask
 from functools import wraps
 import jwt
 from datetime import datetime
@@ -14,9 +15,10 @@ from flask_cors import CORS
 app = Flask(__name__)
 app.secret_key = "1234"
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://mzrnhsngpzhail:8fff0c777d10daa3dea6ec53594028daaf11fa66c82bb85a8b429035d74d1eaa@ec2-3-219-19-205.compute-1.amazonaws.com:5432/d2065pa7oj1vo7'
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost:5432/realtors-db'
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://everreach_staging:zytjiv-peprib-fyvvU5@everreach.nell.sh/realtors-db"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost:5432/realtors-db'
+#app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://everreach_staging:zytjiv-peprib-fyvvU5@everreach.nell.sh/realtors-db"
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['WHOOSE_BASE'] = 'whoosh'
 CORS(app)
 db = SQLAlchemy(app)
 
@@ -31,6 +33,7 @@ class Users(db.Model):
 
 
 class Agents(db.Model):
+    #__searchable__ = ['email', 'firstName', 'middleName', 'lastName', 'officeName', 'officeAddress1', 'officeAddress2', 'officeCity', 'officeState', 'officeZip', 'officeCountry']
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255))
     firstName = db.Column(db.String(255))
@@ -52,7 +55,6 @@ class Agents(db.Model):
 
     def __repr__(self):
         return '<Agents %r>' % self.email
-
 
 
 
@@ -186,23 +188,67 @@ def addNewAgent(cUser):
 def getRealtors(cUser):
     page = request.args.get("page", type=int)
     per_page = request.args.get("per_page", type=int)
-    
-    realtors = Agents.query.order_by(Agents.id).paginate(page=page, per_page=per_page)
+    sort = request.args.get("sort")
+    isDesc = request.args.get("isDesc", type=int)
 
     obj = []
     cnt = 0
 
-    realtors.items.sort(key=lambda x: x.id, reverse=True)
+    if sort == "email":
+        if isDesc:
+            query = Agents.query.order_by(Agents.email.desc())
+        else:
+            query = Agents.query.order_by(Agents.email.asc())
+    elif sort == "firstName":
+        if isDesc:
+            query = Agents.query.order_by(Agents.firstName.desc())
+            print("Im True")
+            print(isDesc)
+        else:
+            query = Agents.query.order_by(Agents.firstName.asc())
+    elif sort == "lastName":
+        if isDesc:
+            query = Agents.query.order_by(Agents.lastName.desc())
+        else:
+            query = Agents.query.order_by(Agents.lastName.asc())
+    elif sort == "officeName":
+        if isDesc:
+            query = Agents.query.order_by(Agents.officeName.desc())
+        else:
+            query = Agents.query.order_by(Agents.officeName.asc())
+    elif sort == "officeCity":
+        if isDesc:
+            query = Agents.query.order_by(Agents.officeCity.desc())
+        else:
+            query = Agents.query.order_by(Agents.officeCity.asc())
+    elif sort == "officeState":
+        if isDesc:
+            query = Agents.query.order_by(Agents.officeState.desc())
+        else:
+            query = Agents.query.order_by(Agents.officeState.asc())
+    elif sort == "officePhone":
+        if isDesc:
+            query = Agents.query.order_by(Agents.officePhone.desc())
+        else:
+            query = Agents.query.order_by(Agents.officePhone.asc())
+    else:
+        query = Agents.query.order_by(Agents.id)
+
+    realtors = query.paginate(page=page, per_page=per_page)
+
+    if not sort:
+        realtors.items.sort(key=lambda x: x.id, reverse=False)
 
     for r in realtors.items:
-
         obj.insert(cnt, {"_id": r.id, "email": r.email, "firstName": r.firstName, "middleName": r.middleName, "lastName": r.lastName,
                         "suffix": r.suffix, "officeName": r.officeName, "officeAddress1": r.officeAddress1, "officeAddress2": r.officeAddress2,
                         "officeCity": r.officeCity, "officeState": r.officeState, "officeZip": r.officeZip, "officeCountry": r.officeCountry,
                         "officePhone": r.officePhone, "officeFax": r.officeFax, "cellPhone": r.cellPhone, "createdAt":r.createdAt})
-    
+
+        cnt += 1
 
     return {"realtors":obj, "page":page, "pages":realtors.pages, "next_page":realtors.next_num, "prev_page": realtors.prev_num, "total": realtors.total}
+
 
 
 
