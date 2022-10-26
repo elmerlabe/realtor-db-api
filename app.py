@@ -15,8 +15,8 @@ from flask_cors import CORS
 app = Flask(__name__)
 app.secret_key = "1234"
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://mzrnhsngpzhail:8fff0c777d10daa3dea6ec53594028daaf11fa66c82bb85a8b429035d74d1eaa@ec2-3-219-19-205.compute-1.amazonaws.com:5432/d2065pa7oj1vo7'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost:5432/realtors-db'
-#app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://everreach_staging:zytjiv-peprib-fyvvU5@everreach.nell.sh/realtors-db"
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost:5432/realtors-db'
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://everreach_staging:zytjiv-peprib-fyvvU5@everreach.nell.sh/realtors-db"
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['WHOOSE_BASE'] = 'whoosh'
 CORS(app)
