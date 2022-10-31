@@ -14,11 +14,10 @@ from flask_cors import CORS
 
 app = Flask(__name__)
 app.secret_key = "1234"
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://mzrnhsngpzhail:8fff0c777d10daa3dea6ec53594028daaf11fa66c82bb85a8b429035d74d1eaa@ec2-3-219-19-205.compute-1.amazonaws.com:5432/d2065pa7oj1vo7'
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost:5432/realtors-db'
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://everreach_staging:zytjiv-peprib-fyvvU5@everreach.nell.sh/realtors-db"
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
-app.config['WHOOSE_BASE'] = 'whoosh'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://mzrnhsngpzhail:8fff0c777d10daa3dea6ec53594028daaf11fa66c82bb85a8b429035d74d1eaa@ec2-3-219-19-205.compute-1.amazonaws.com:5432/d2065pa7oj1vo7' # heroku-postgres
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost:5432/realtors-db' # local database
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://everreach_staging:zytjiv-peprib-fyvvU5@everreach.nell.sh/realtors-db" # Nell remote server
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db' # SQLite
 CORS(app)
 db = SQLAlchemy(app)
 
@@ -56,6 +55,27 @@ class Agents(db.Model):
     def __repr__(self):
         return '<Agents %r>' % self.email
 
+
+class Cities(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255))
+    stateId = db.Column(db.Integer, db.ForeignKey('states.id'))
+    state = db.relationship('States', backref=db.backref('state', lazy=True))
+    createdAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    updatedAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
+
+    def __repr__(self):
+        return '<Cities %r>' % self.name
+
+
+class States(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255))
+    createdAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
+    updatedAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
+
+    def __repr__(self):
+        return '<Cities %r>' % self.name
 
 
 def token_required(f):
@@ -190,49 +210,59 @@ def getRealtors(cUser):
     per_page = request.args.get("per_page", type=int)
     sort = request.args.get("sort")
     isDesc = request.args.get("isDesc", type=int)
+    city = request.args.get("city")
+    state = request.args.get("state")
 
     obj = []
     cnt = 0
 
-    if sort == "email":
-        if isDesc:
-            query = Agents.query.order_by(Agents.email.desc())
-        else:
-            query = Agents.query.order_by(Agents.email.asc())
-    elif sort == "firstName":
-        if isDesc:
-            query = Agents.query.order_by(Agents.firstName.desc())
-            print("Im True")
-            print(isDesc)
-        else:
-            query = Agents.query.order_by(Agents.firstName.asc())
-    elif sort == "lastName":
-        if isDesc:
-            query = Agents.query.order_by(Agents.lastName.desc())
-        else:
-            query = Agents.query.order_by(Agents.lastName.asc())
-    elif sort == "officeName":
-        if isDesc:
-            query = Agents.query.order_by(Agents.officeName.desc())
-        else:
-            query = Agents.query.order_by(Agents.officeName.asc())
-    elif sort == "officeCity":
-        if isDesc:
-            query = Agents.query.order_by(Agents.officeCity.desc())
-        else:
-            query = Agents.query.order_by(Agents.officeCity.asc())
-    elif sort == "officeState":
-        if isDesc:
-            query = Agents.query.order_by(Agents.officeState.desc())
-        else:
-            query = Agents.query.order_by(Agents.officeState.asc())
-    elif sort == "officePhone":
-        if isDesc:
-            query = Agents.query.order_by(Agents.officePhone.desc())
-        else:
-            query = Agents.query.order_by(Agents.officePhone.asc())
+    if city and not state:
+        query = Agents.query.filter(Agents.officeCity==city)
+        print("city")
+    elif not city and state:
+        query = Agents.query.filter(Agents.officeState==state)
+        print("state")
+    elif city and state:
+        query = Agents.query.filter(Agents.officeCity==city).filter(Agents.officeState==state)
+        print("City & State")
     else:
-        query = Agents.query.order_by(Agents.id)
+        if sort == "email":
+            if isDesc:
+                query = Agents.query.order_by(Agents.email.desc())
+            else:
+                query = Agents.query.order_by(Agents.email.asc())
+        elif sort == "firstName":
+            if isDesc:
+                query = Agents.query.order_by(Agents.firstName.desc())
+            else:
+                query = Agents.query.order_by(Agents.firstName.asc())
+        elif sort == "lastName":
+            if isDesc:
+                query = Agents.query.order_by(Agents.lastName.desc())
+            else:
+                query = Agents.query.order_by(Agents.lastName.asc())
+        elif sort == "officeName":
+            if isDesc:
+                query = Agents.query.order_by(Agents.officeName.desc())
+            else:
+                query = Agents.query.order_by(Agents.officeName.asc())
+        elif sort == "officeCity":
+            if isDesc:
+                query = Agents.query.order_by(Agents.officeCity.desc())
+            else:
+                query = Agents.query.order_by(Agents.officeCity.asc())
+        elif sort == "officeState":
+            if isDesc:
+                query = Agents.query.order_by(Agents.officeState.desc())
+            else:
+                query = Agents.query.order_by(Agents.officeState.asc())
+        elif sort == "officePhone":
+            if isDesc:
+                query = Agents.query.order_by(Agents.officePhone.desc())
+            else:
+                query = Agents.query.order_by(Agents.officePhone.asc())
+        else:
+            query = Agents.query.order_by(Agents.id)
 
     realtors = query.paginate(page=page, per_page=per_page)
 
@@ -251,6 +281,31 @@ def getRealtors(cUser):
 
 
 
+@app.route("/getCities", methods=['GET', 'POST'])
+def getCities():
+    stateId = request.args.get('stateId', type=int)
+    cities = Cities.query.filter(Cities.stateId==stateId).order_by(Cities.name).all()
+    obj = []
+    cnt = 0
+
+    for c in cities:
+        obj.insert(cnt, {"id": c.id, "stateId": c.stateId,"name": c.name})
+        cnt += 1
+
+    return {"result":True, "cities": obj}
+
+
+@app.route("/getStates", methods=['GET', 'POST'])
+def getStates():
+    states = States.query.all()
+    obj = []
+    cnt = 0
+
+    for s in states:
+        obj.insert(cnt, {"id": s.id, "name": s.name})
+        cnt += 1
+
+    return {"result":True, "states": obj}
 
 
 #Insert mockdata to database 
@@ -272,6 +327,66 @@ def getRealtors(cUser):
         #    break
 
     print("Total realtors added: ")
+    print(cnt)'''
+
+
+'''with open("MOCKDATA/Cities.csv", "r") as csv_file:
+    csv_reader = csv.DictReader(csv_file, delimiter=',')    
+    cnt = 0
+
+    for c in csv_reader:
+
+        cnt +=1
+        cities = Cities(name=c['officeCity'])
+
+        print(cnt)
+
+        db.session.add(cities)
+        db.session.commit()
+
+
+    print("Total realtors added: ")
+    print(cnt)'''
+
+
+'''with open("MOCKDATA/States.csv", "r") as csv_file:
+    csv_reader = csv.DictReader(csv_file, delimiter=',')    
+    cnt = 0
+
+    for c in csv_reader:
+
+        cnt +=1
+        states = States(name=c['officeState'])
+
+        print(cnt)
+
+        db.session.add(states)
+        db.session.commit()
+
+
+    print("Total realtors added: ")
+    print(cnt)'''
+
+
+'''with open("MOCKDATA/stateCityCompresedP2.csv", "r") as csv_file:
+    csv_reader = csv.DictReader(csv_file, delimiter=',')    
+    cnt = 0
+
+    for c in csv_reader:
+        state = States.query.filter_by(name=c['State']).first()
+        has_city = Cities.query.filter_by(name=c['City']).filter_by(stateId=state.id).first()
+
+        if state and not has_city:
+            cnt +=1
+            cities = Cities(name=c['City'], stateId=state.id)
+
+            print(cnt)
+
+            db.session.add(cities)
+            db.session.commit()
+
+
+    print("Total Cities added: ")
     print(cnt)'''
 
 
