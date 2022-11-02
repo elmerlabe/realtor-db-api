@@ -1,5 +1,7 @@
 from asyncio import constants
 import csv
+from operator import or_
+import re
 import flask
 from functools import wraps
 import jwt
@@ -11,6 +13,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS 
+from sqlalchemy import or_
 
 app = Flask(__name__)
 app.secret_key = "1234"
@@ -32,7 +35,6 @@ class Users(db.Model):
 
 
 class Agents(db.Model):
-    #__searchable__ = ['email', 'firstName', 'middleName', 'lastName', 'officeName', 'officeAddress1', 'officeAddress2', 'officeCity', 'officeState', 'officeZip', 'officeCountry']
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255))
     firstName = db.Column(db.String(255))
@@ -71,6 +73,7 @@ class Cities(db.Model):
 class States(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
+    longName = db.Column(db.String(255))
     createdAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
     updatedAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
@@ -212,19 +215,48 @@ def getRealtors(cUser):
     isDesc = request.args.get("isDesc", type=int)
     city = request.args.get("city")
     state = request.args.get("state")
+    search = request.args.get("search")
 
     obj = []
     cnt = 0
 
     if city and not state:
         query = Agents.query.filter(Agents.officeCity==city)
-        print("city")
     elif not city and state:
         query = Agents.query.filter(Agents.officeState==state)
-        print("state")
     elif city and state:
         query = Agents.query.filter(Agents.officeCity==city).filter(Agents.officeState==state)
-        print("City & State")
+    elif search:
+        agents = Agents.query
+        #query = agents.filter(Agents.officeCity.ilike('%' + search + '%'))
+
+        # search for state
+        if len(search) == 2:
+            query = agents.filter(Agents.officeState.ilike('%' + search + '%'))
+        
+        # search for email
+        elif search.__contains__('@') or search.__contains__('.com') or search.__contains__('.net'):
+            query = agents.filter(Agents.email.ilike('%' + search + '%'))
+
+        # search for numbers
+        elif any(char.isdigit() for char in search) and len(search) != 2:
+
+            query = agents.filter(
+                or_(
+                    Agents.officePhone.ilike('%' + search + '%'),
+                    Agents.cellPhone.ilike('%' + search + '%'),
+                )
+            )
+
+        # search for all
+        else:
+            query = agents.filter(
+                or_(
+                    Agents.officeCity.ilike('%' + search + '%'),
+                    Agents.firstName.ilike('%' + search + '%'),
+                    Agents.lastName.ilike('%' + search + '%')
+                )
+            )
     else:
         if sort == "email":
             if isDesc:
@@ -302,7 +334,7 @@ def getStates():
     cnt = 0
 
     for s in states:
-        obj.insert(cnt, {"id": s.id, "name": s.name})
+        obj.insert(cnt, {"id": s.id, "name": s.name, "longName": s.longName})
         cnt += 1
 
     return {"result":True, "states": obj}
@@ -349,6 +381,7 @@ def getStates():
     print(cnt)'''
 
 
+
 '''with open("MOCKDATA/States.csv", "r") as csv_file:
     csv_reader = csv.DictReader(csv_file, delimiter=',')    
     cnt = 0
@@ -356,12 +389,10 @@ def getStates():
     for c in csv_reader:
 
         cnt +=1
-        states = States(name=c['officeState'])
-
-        print(cnt)
-
-        db.session.add(states)
+        state = States(name=c['name'], longName=c['longName'])
+        db.session.add(state)
         db.session.commit()
+        print(cnt)
 
 
     print("Total realtors added: ")
