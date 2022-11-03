@@ -220,11 +220,11 @@ def getRealtors(cUser):
     obj = []
     cnt = 0
 
-    if city and not state:
+    if city and not state and not search:
         query = Agents.query.filter(Agents.officeCity==city)
-    elif not city and state:
+    elif not city and state and not search:
         query = Agents.query.filter(Agents.officeState==state)
-    elif city and state:
+    elif city and state and not search:
         query = Agents.query.filter(Agents.officeCity==city).filter(Agents.officeState==state)
     elif search:
         agents = Agents.query
@@ -315,8 +315,9 @@ def getRealtors(cUser):
 
 @app.route("/getCities", methods=['GET', 'POST'])
 def getCities():
-    stateId = request.args.get('stateId', type=int)
-    cities = Cities.query.filter(Cities.stateId==stateId).order_by(Cities.name).all()
+    d = request.args.get('state')
+    state = States.query.filter_by(name=d).first()
+    cities = Cities.query.filter(Cities.stateId==state.id).order_by(Cities.name).all()
     obj = []
     cnt = 0
 
