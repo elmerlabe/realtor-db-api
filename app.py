@@ -1,5 +1,6 @@
 from asyncio import constants
 import csv
+from lib2to3.pgen2 import token
 from operator import or_
 import re
 import flask
@@ -125,7 +126,19 @@ def signin():
 @app.route("/getUserFromToken", methods=['POST'])
 @token_required
 def getUserFromToken(cUser):
-    return {"result": True, "user":cUser.username}
+    return {"result": True, "user":cUser.username, "name": cUser.name}
+
+@app.route("/updateUser", methods=['POST'])
+@token_required
+def updateUser(cUser):
+    d = request.get_json()
+    hashed_pw = generate_password_hash(d['data']['password'], "sha256")
+    
+    cUser.username = d['data']['username']
+    cUser.password = hashed_pw
+    db.session.commit()
+    
+    return {"result": True, "message": "Successfully Updated!"}
 
 
 @app.route("/getAgentFromId", methods=['POST'])
