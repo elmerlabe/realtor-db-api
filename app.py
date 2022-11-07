@@ -244,7 +244,7 @@ def getRealtors(cUser):
         #query = agents.filter(Agents.officeCity.ilike('%' + search + '%'))
 
         # search for state
-        if len(search) == 2:
+        if len(search) == 2 and not any(char.isdigit() for char in search):
             query = agents.filter(Agents.officeState.ilike('%' + search + '%'))
         
         # search for email
@@ -252,7 +252,7 @@ def getRealtors(cUser):
             query = agents.filter(Agents.email.ilike('%' + search + '%'))
 
         # search for numbers
-        elif any(char.isdigit() for char in search) and len(search) != 2:
+        elif any(char.isdigit() for char in search):
 
             query = agents.filter(
                 or_(
@@ -261,7 +261,7 @@ def getRealtors(cUser):
                 )
             )
 
-        # search for all
+        # search 3 columns
         else:
             query = agents.filter(
                 or_(
