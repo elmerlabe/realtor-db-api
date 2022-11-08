@@ -10,7 +10,7 @@ from datetime import datetime
 from email.policy import default
 from numbers import Real
 from urllib import request
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS 
@@ -326,6 +326,39 @@ def getRealtors(cUser):
 
 
 
+@app.route("/exportCSV", methods=['GET', 'POST'])
+def exportCSV():
+    state = request.args.get('state')
+    city = request.args.get('city')
+    
+    filename = state + "_" + city + ".csv"
+
+    if state and not city:
+        query = Agents.query.filter(Agents.officeState==state).all()
+    elif city and state:
+        query = Agents.query.filter(Agents.officeCity==city).filter(Agents.officeState==state).all()
+    else:
+        query = ""
+
+    with open('agentData.csv', 'w', encoding='UTF8', newline='') as f:
+        cnt = 0
+        header = ["#", "email", "firstName", "middleName", "lastName", "suffix", "officeName", "officeAddress1", "officeAddress2",
+                        "officeCity", "officeState", "officeZip", "officeCountry","officePhone", "officeFax", "cellPhone"]
+        writer = csv.writer(f)
+        writer.writerow(header)
+
+        for a in query:
+            cnt +=1
+            data = [cnt, a.email, a.firstName, a.middleName, a.lastName, a.suffix, a.officeName, a.officeAddress1, a.officeAddress2,
+                    a.officeCity, a.officeState, a.officeZip, a.officeCountry, a.officePhone, a.officeFax, a.cellPhone]
+            
+            writer.writerow(data)
+
+    return send_file('agentData.csv', mimetype='text/csv', as_attachment=True,  download_name=filename)
+
+
+
+
 @app.route("/getCities", methods=['GET', 'POST'])
 def getCities():
     d = request.args.get('state')
@@ -335,8 +368,9 @@ def getCities():
     cnt = 0
 
     for c in cities:
-        obj.insert(cnt, {"id": c.id, "stateId": c.stateId,"name": c.name})
-        cnt += 1
+        if c.name != "":
+            obj.insert(cnt, {"id": c.id, "stateId": c.stateId,"name": c.name})
+            cnt += 1
 
     return {"result":True, "cities": obj}
 
