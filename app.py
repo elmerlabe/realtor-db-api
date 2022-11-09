@@ -200,23 +200,41 @@ def removeAgent(cUser):
     return {"result": True, "message": "Successfully removed!"}
 
 
+@app.route("/emailCheck", methods=['GET', 'POST'])
+def emailCheck():
+    email = request.args.get('email')
+    pat =  r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    
+    if re.match(pat, email):
+        has_email = Agents.query.filter_by(email=email).first()
+        if not has_email:
+            return {"result":True, "message": "Valid email format"}
+        else:
+            return {"result":False, "message": "Email already exist"}
+    else:
+        return {"result":False, "message": "Invalid email format"}
+
+
 @app.route("/addNewAgent", methods=["POST"])
 @token_required
 def addNewAgent(cUser):
     data = request.get_json()
     d = data.get('data')
+    has_email = Agents.query.filter_by(email=d['email']).first()
 
-    agent = Agents(email = d['email'], firstName = d['firstName'],middleName = d['middleName'],
-                    lastName = d['lastName'],suffix = d['suffix'],officeName = d['officeName'],officeAddress1 = d['officeAddress1'],
-                    officeAddress2 = d['officeAddress2'],officeCity = d['officeCity'],officeState = d['officeState'],
-                    officeZip = d['officeZip'],officeCountry = d['officeCountry'],officePhone = d['officePhone'],
-                    officeFax = d['officeFax'],cellPhone = d['cellPhone'])
-    
-    
-    db.session.add(agent)
-    db.session.commit()
-    return {"result": True, "message": "New agent successfully added"}
+    if not has_email:
+        agent = Agents(email = d['email'], firstName = d['firstName'],middleName = d['middleName'],
+                        lastName = d['lastName'],suffix = d['suffix'],officeName = d['officeName'],officeAddress1 = d['officeAddress1'],
+                        officeAddress2 = d['officeAddress2'],officeCity = d['officeCity'],officeState = d['officeState'],
+                        officeZip = d['officeZip'],officeCountry = d['officeCountry'],officePhone = d['officePhone'],
+                        officeFax = d['officeFax'],cellPhone = d['cellPhone'])
 
+
+        db.session.add(agent)
+        db.session.commit()
+        return {"result": True, "message": "New agent successfully added"}
+    else:
+        return {"result": False, "message": "Existing email address"}
 
 
 @app.route("/getRealtors", methods=['POST', 'GET'])
