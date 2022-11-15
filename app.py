@@ -14,7 +14,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS 
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 
 app = Flask(__name__)
 app.secret_key = "1234"
@@ -247,6 +247,7 @@ def getRealtors(cUser):
     city = request.args.get("city")
     state = request.args.get("state")
     search = request.args.get("search")
+    selectedColumn = request.args.get("selectedColumn")
 
     obj = []
     cnt = 0
@@ -257,37 +258,90 @@ def getRealtors(cUser):
         query = Agents.query.filter(Agents.officeState==state)
     elif city and state and not search:
         query = Agents.query.filter(Agents.officeCity==city).filter(Agents.officeState==state)
+
     elif search:
         agents = Agents.query
         #query = agents.filter(Agents.officeCity.ilike('%' + search + '%'))
 
-        # search for state
-        if len(search) == 2 and not any(char.isdigit() for char in search):
-            query = agents.filter(Agents.officeState.ilike('%' + search + '%'))
-        
-        # search for email
-        elif search.__contains__('@') or search.__contains__('.com') or search.__contains__('.net'):
-            query = agents.filter(Agents.email.ilike('%' + search + '%'))
+        if not selectedColumn:
+            # search for state
+            if len(search) == 2 and not any(char.isdigit() for char in search):
+                query = agents.filter(Agents.officeState.ilike('%' + search + '%'))
 
-        # search for numbers
-        elif any(char.isdigit() for char in search):
+            # search for email
+            elif search.__contains__('@') or search.__contains__('.com') or search.__contains__('.net'):
+                query = agents.filter(Agents.email.ilike('%' + search + '%'))
 
-            query = agents.filter(
-                or_(
-                    Agents.officePhone.ilike('%' + search + '%'),
-                    Agents.cellPhone.ilike('%' + search + '%'),
+            # search for numbers
+            elif any(char.isdigit() for char in search):
+
+                query = agents.filter(
+                    or_(
+                        Agents.officePhone.ilike('%' + search + '%'),
+                        Agents.cellPhone.ilike('%' + search + '%'),
+                    )
                 )
-            )
 
-        # search 3 columns
+            # search 3 columns
+            else:
+                query = agents.filter(
+                    or_(
+                        Agents.officeCity.ilike('%' + search + '%'),
+                        Agents.firstName.ilike('%' + search + '%'),
+                        Agents.lastName.ilike('%' + search + '%')
+                    )
+                )
         else:
-            query = agents.filter(
-                or_(
-                    Agents.officeCity.ilike('%' + search + '%'),
-                    Agents.firstName.ilike('%' + search + '%'),
-                    Agents.lastName.ilike('%' + search + '%')
+            if selectedColumn == "name":
+                if " " in search:
+                    txt = search.split() 
+                    #query = Agents.query.filter(Agents.firstName==txt[0]).filter(Agents.lastName==txt[1])
+                    query = agents.filter(
+                        and_(
+                            Agents.firstName.ilike('%' + txt[0] + '%'),
+                            Agents.lastName.ilike('%' + txt[1] + '%')
+                        )
+                    )
+                else:
+                    query = agents.filter(
+                        or_(
+                            Agents.firstName.ilike('%' + search + '%'),
+                            Agents.lastName.ilike('%' + search + '%')
+                        )
+                    )
+            
+            elif selectedColumn == "email":
+                query = agents.filter(Agents.email.ilike('%' + search + '%' ))
+
+            elif selectedColumn == "officeName":
+                query = agents.filter(Agents.officeName.ilike('%' + search + '%' ))
+            elif selectedColumn == "officeAddress":
+                query = agents.filter(
+                    or_(
+                        Agents.officeAddress1.ilike('%' + search + '%' ),
+                        Agents.officeAddress2.ilike('%' + search + '%' ),
+                    )
                 )
-            )
+            elif selectedColumn == "phoneNumber":
+                query = agents.filter(
+                    or_(
+                        Agents.officePhone.ilike('%' + search + '%' ),
+                        Agents.officeFax.ilike('%' + search + '%' ),
+                        Agents.cellPhone.ilike('%' + search + '%' ),
+                    )
+                )
+            elif selectedColumn == "officeZip":
+                query = agents.filter(Agents.officeZip.ilike('%' + search + '%' ))
+            elif selectedColumn == "officeCity":
+                query = agents.filter(Agents.officeCity.ilike('%' + search + '%' ))
+            elif selectedColumn == "officeCountry":
+                query = agents.filter(Agents.officeCountry.ilike('%' + search + '%' ))
+
+        if state and not city:
+            query = query.filter(Agents.officeState==state)
+        elif state and city:
+            query = query.filter(Agents.officeState==state).filter(Agents.officeCity==city)
+
     else:
         if sort == "email":
             if isDesc:
