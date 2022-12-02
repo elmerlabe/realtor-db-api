@@ -14,7 +14,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS 
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, desc, asc
 
 app = Flask(__name__)
 app.secret_key = "1234"
@@ -459,6 +459,35 @@ def getStates():
 
     return {"result":True, "states": obj}
 
+
+@app.route("/getDatabaseSummary", methods=['GET', 'POST'])
+def getDatabaseSummary():
+    agents = Agents.query.count()
+    emails = Agents.query.filter(Agents.email != "").count()
+    phones = Agents.query.filter(
+        or_(Agents.officePhone != "",
+            Agents.cellPhone != "")
+    ).count()
+    return {"agents": agents, "emails": emails, "phones": phones}
+
+@app.route("/getAgentsByState", methods=['GET', 'POST'])
+def getAgentsByState():
+    state = request.args.get("state")
+    totalAgents = Agents.query.filter_by(officeState=state).count()
+
+    return {"state": state, "totalAgents": totalAgents}
+    
+
+
+@app.route("/getAgentsPerState", methods=['GET', 'POST'])
+def getAgentsPerState():
+    states = States.query.order_by(desc(States.name)).all()
+    obj = []
+    for s in states:
+        totalAgents = Agents.query.filter(Agents.officeState==s.name).count()
+        obj.insert(0, {"id": s.id, "name": s.name,  "longName": s.longName, "totalAgents": totalAgents})
+
+    return {"agentsPerState": obj}
 
 #Insert mockdata to database 
 '''with open("MOCKDATA/Book1.csv", "r") as csv_file:
