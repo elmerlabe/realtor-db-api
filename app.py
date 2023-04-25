@@ -238,7 +238,7 @@ def addNewAgent(cUser):
 
 @app.route("/getRealtors", methods=['POST', 'GET'])
 @token_required
-def getRealtors():
+def getRealtors(cUser):
     page = request.args.get("page", type=int)
     per_page = request.args.get("per_page", type=int)
     sort = request.args.get("sort")
