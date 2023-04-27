@@ -84,9 +84,10 @@ class States(db.Model):
 def token_required(f):
     @wraps(f)
     def decorator(*args, **kwargs):
-        d = request.get_json()
-        token = d.get('token')
-        #print(d)
+        token = None
+
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(" ")[1]
 
         if not token:
             return {"message": "a valid token is missing"}
@@ -123,9 +124,20 @@ def signin():
         return {"result": False, "message": "Invalid username"}
 
 @app.route("/getUserFromToken", methods=['POST'])
-@token_required
-def getUserFromToken(cUser):
-    return {"result": True, "user":cUser.username, "name": cUser.name}
+def getUserFromToken():
+
+    d = request.get_json()
+    token = d['token']
+
+    if not token:
+        return {"message": "a valid token is missing"}
+    try:
+        data = jwt.decode(token, app.secret_key, algorithms=["HS256"])
+        user = Users.query.get(data['id'])
+    except:
+        return {'message': 'token is invalid'}
+    
+    return {"result": True, "user":user.username, "name": user.name}
 
 @app.route("/updateUser", methods=['POST'])
 @token_required
