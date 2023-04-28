@@ -489,16 +489,13 @@ def getAgentsByState():
     return {"state": state, "totalAgents": totalAgents}
     
 
+@app.route("/getAgentsPerState/<state>", methods=['GET', 'POST'])
+@token_required
+def getAgentsPerState(cUser, state):
 
-@app.route("/getAgentsPerState", methods=['GET', 'POST'])
-def getAgentsPerState():
-    states = States.query.order_by(desc(States.name)).all()
-    obj = []
-    for s in states:
-        totalAgents = Agents.query.filter(Agents.officeState==s.name).count()
-        obj.insert(0, {"id": s.id, "name": s.name,  "longName": s.longName, "totalAgents": totalAgents})
+    ttlAgentPerState = Agents.query.filter(Agents.officeState == state).count()
 
-    return {"agentsPerState": obj}
+    return {"ttlAgentPerState": ttlAgentPerState}
 
 #Insert mockdata to database 
 '''with open("MOCKDATA/Book1.csv", "r") as csv_file:
