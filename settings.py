@@ -1,5 +1,5 @@
 SECRET = "1234"
-DB_URI = 'postgresql://pgkzczdfokeqym:866af61395caa9f705f45681ddfeebb54b837932452c213fcec8a8fcb57c7add@ec2-52-1-92-133.compute-1.amazonaws.com:5432/da1lbdf5qb0g6v'
+DB_URI = 'postgresql://ozbgcokwvsybvj:eec12c42ac7092ff8457173506360c0067c4e13033f5309a5b417a11f9a3d63c@ec2-34-236-103-63.compute-1.amazonaws.com:5432/d6g2vlve0oi6hl'
 
 #DB_URI = 'postgresql://postgres:root@localhost:5432/realtors-db' # local database
 #DB_URI = 'sqlite:///site.db'
