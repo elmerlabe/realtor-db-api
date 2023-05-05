@@ -30,6 +30,7 @@ class Users(db.Model):
     username = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(200), nullable=False)
     name = db.Column(db.String(50))
+    email = db.Column(db.String(255), nullable=False)
     createdAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
     updatedAt = db.Column(db.DateTime, nullable=False, default=datetime.now())
 
@@ -137,7 +138,7 @@ def getUserFromToken():
     except:
         return {'message': 'token is invalid'}
     
-    return {"result": True, "user":user.username, "name": user.name}
+    return {"result": True, "user": user.username, "name": user.name, "email": user.email}
 
 @app.route("/updateUser", methods=['POST'])
 @token_required
@@ -145,6 +146,8 @@ def updateUser(cUser):
     d = request.get_json()
     hashed_pw = generate_password_hash(d['data']['password'], "sha256")
     
+    cUser.name = d['data']['name']
+    cUser.email = d['data']['email']
     cUser.username = d['data']['username']
     cUser.password = hashed_pw
     db.session.commit()
