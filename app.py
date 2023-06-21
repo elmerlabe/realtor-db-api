@@ -295,6 +295,18 @@ def getRealtors(cUser):
                         Agents.cellPhone.ilike('%' + search + '%'),
                     )
                 )
+            # search for city & state
+            elif " " in search:
+                txt = search.split()
+                if len(txt) > 1:
+                    query = agents.filter(
+                        and_(
+                            Agents.officeCity.ilike('%' + txt[0] + '%'),
+                            Agents.officeState.ilike('%' + txt[1] + '%')
+                        )
+                    )
+                else:
+                    query = agents.filter(Agents.officeCity.ilike('%' + search + '%' ))
 
             # search 3 columns
             else:
