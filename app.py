@@ -1,4 +1,3 @@
-from asyncio import constants
 import csv
 from lib2to3.pgen2 import token
 from operator import or_
@@ -110,7 +109,6 @@ def index():
 @app.route("/signin", methods=['POST'])
 def signin():
     d = request.get_json()
-    print(d)
     username = d['username']
     password = d['password']
 
@@ -412,17 +410,36 @@ def getRealtors(cUser):
     if not sort:
         realtors.items.sort(key=lambda x: x.id, reverse=False)
 
+    COMMON_DOMAINS = ["gmail.com","yahoo.com","outlook.com","aol.com","icloud.com",
+                     "comcast.net","verizon.net","att.net","cox.net","hotmail.com",
+                     "spectrum.net","gmx.com","earthlink.net","juno.com","netzero.net",
+                     "zoho.com","protonmail.com","mail.com","tutanota.com","fastmail.com", 
+                     "msn.com", "live.com"]
+    
     for r in realtors.items:
+        email = r.email
+        domain = email[email.find('@')+1 :len(email)]
+        excludeDomain = True
+
+        for d in COMMON_DOMAINS:
+            if d == domain:
+                excludeDomain = True
+                break
+            else:
+                excludeDomain = False
+
+        if not excludeDomain:
+            ttlAgentPerDomain = Agents.query.filter(Agents.email.contains(domain)).count()
+        else:
+            ttlAgentPerDomain = "-"
+
         obj.insert(cnt, {"_id": r.id, "email": r.email, "firstName": r.firstName, "middleName": r.middleName, "lastName": r.lastName,
                         "suffix": r.suffix, "officeName": r.officeName, "officeAddress1": r.officeAddress1, "officeAddress2": r.officeAddress2,
                         "officeCity": r.officeCity, "officeState": r.officeState, "officeZip": r.officeZip, "officeCountry": r.officeCountry,
-                        "officePhone": r.officePhone, "officeFax": r.officeFax, "cellPhone": r.cellPhone, "createdAt":r.createdAt})
-
+                        "officePhone": r.officePhone, "officeFax": r.officeFax, "cellPhone": r.cellPhone, "ttlAgentPerDomain": ttlAgentPerDomain, "createdAt":r.createdAt})
         cnt += 1
 
     return {"realtors":obj, "page":page, "pages":realtors.pages, "next_page":realtors.next_num, "prev_page": realtors.prev_num, "total": realtors.total}
-
-
 
 @app.route("/exportCSV", methods=['GET', 'POST'])
 def exportCSV():
@@ -454,9 +471,6 @@ def exportCSV():
 
     return send_file('agentData.csv', mimetype='text/csv', as_attachment=True,  download_name=filename)
 
-
-
-
 @app.route("/getCities", methods=['GET', 'POST'])
 def getCities():
     d = request.args.get('state')
@@ -484,7 +498,6 @@ def getStates():
         cnt += 1
 
     return {"result":True, "states": obj}
-
 
 @app.route("/getDatabaseSummary", methods=['GET', 'POST'])
 def getDatabaseSummary():
