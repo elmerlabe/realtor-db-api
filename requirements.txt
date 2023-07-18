@@ -15,4 +15,3 @@ redis==4.6.0
 six==1.16.0
 SQLAlchemy==1.4.41
 Werkzeug==2.2.2
-rkzeug==2.2.2
