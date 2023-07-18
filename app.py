@@ -1,23 +1,30 @@
 import csv
-from lib2to3.pgen2 import token
+import redis as redis_
+import json
 from operator import or_
 import re
-import flask
 from functools import wraps
 import jwt
 from datetime import datetime
-from email.policy import default
-from numbers import Real
 from urllib import request
 from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS 
-from sqlalchemy import or_, and_, desc, asc
-from settings import DB_URI, SECRET
+from sqlalchemy import or_, and_
+from settings import DB_URI, SECRET, REDIS_URL
 
 app = Flask(__name__)
 app.secret_key = SECRET
+
+# redis
+redis = redis_.from_url(REDIS_URL)
+
+COMMON_DOMAINS = ["gmail.com","yahoo.com","outlook.com","aol.com","icloud.com",
+    "comcast.net","verizon.net","att.net","cox.net","hotmail.com",
+    "spectrum.net","gmx.com","earthlink.net","juno.com","netzero.net",
+    "zoho.com","protonmail.com","mail.com","tutanota.com","fastmail.com", 
+    "msn.com", "live.com"]
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URI
 CORS(app)
@@ -409,37 +416,42 @@ def getRealtors(cUser):
 
     if not sort:
         realtors.items.sort(key=lambda x: x.id, reverse=False)
-
-    COMMON_DOMAINS = ["gmail.com","yahoo.com","outlook.com","aol.com","icloud.com",
-                     "comcast.net","verizon.net","att.net","cox.net","hotmail.com",
-                     "spectrum.net","gmx.com","earthlink.net","juno.com","netzero.net",
-                     "zoho.com","protonmail.com","mail.com","tutanota.com","fastmail.com", 
-                     "msn.com", "live.com"]
     
     for r in realtors.items:
-        email = r.email
-        domain = email[email.find('@')+1 :len(email)]
-        excludeDomain = True
-
-        for d in COMMON_DOMAINS:
-            if d == domain:
-                excludeDomain = True
-                break
-            else:
-                excludeDomain = False
-
-        if not excludeDomain:
-            ttlAgentPerDomain = Agents.query.filter(Agents.email.contains(domain)).count()
-        else:
-            ttlAgentPerDomain = "-"
-
         obj.insert(cnt, {"_id": r.id, "email": r.email, "firstName": r.firstName, "middleName": r.middleName, "lastName": r.lastName,
                         "suffix": r.suffix, "officeName": r.officeName, "officeAddress1": r.officeAddress1, "officeAddress2": r.officeAddress2,
                         "officeCity": r.officeCity, "officeState": r.officeState, "officeZip": r.officeZip, "officeCountry": r.officeCountry,
-                        "officePhone": r.officePhone, "officeFax": r.officeFax, "cellPhone": r.cellPhone, "ttlAgentPerDomain": ttlAgentPerDomain, "createdAt":r.createdAt})
+                        "officePhone": r.officePhone, "officeFax": r.officeFax, "cellPhone": r.cellPhone, "createdAt":r.createdAt})
         cnt += 1
 
     return {"realtors":obj, "page":page, "pages":realtors.pages, "next_page":realtors.next_num, "prev_page": realtors.prev_num, "total": realtors.total}
+
+@app.route("/getEmailDomainsCount", methods=["POST", "DELETE"])
+def get_email_domains_count():
+    if request.method == "DELETE":
+        redis.delete("domain_map")
+
+        return jsonify({ "success": True })
+
+    body = request.json
+    domains = body.get("domains")
+    domain_map = redis.get("domain_map")
+
+    if domain_map:
+        domain_map = json.loads(domain_map)
+    else:
+        domain_map = {}
+
+    for domain in domains:
+        if domain not in domain_map:
+            if domain in COMMON_DOMAINS:
+                domain_map[domain] = '-'
+            else:
+                domain_map[domain] = Agents.query.filter(Agents.email.contains(domain)).count()
+
+    redis.set("domain_map", json.dumps(domain_map))
+
+    return jsonify(domain_map)
 
 @app.route("/exportCSV", methods=['GET', 'POST'])
 def exportCSV():
