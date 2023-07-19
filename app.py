@@ -453,6 +453,31 @@ def get_email_domains_count():
 
     return jsonify(domain_map)
 
+@app.route("/getStateAgentsCount", methods=['POST', 'DELETE'])
+def get_state_agents_count():
+    
+    if request.method == 'DELETE':
+        redis.delete("state_map")
+        return jsonify({"success": True})
+
+    body = request.json
+    states = body.get('states')
+    state_map = redis.get("state_map")
+
+    if state_map:
+        state_map = json.loads(state_map)
+    else:
+        state_map = {}
+    
+    for state in states:
+        if state not in state_map:
+            state_map[state] = Agents.query.filter(Agents.officeState==state).count()
+    
+    redis.set("state_map", json.dumps(state_map))
+
+    return jsonify(state_map)
+
+
 @app.route("/exportCSV", methods=['GET', 'POST'])
 def exportCSV():
     state = request.args.get('state')
@@ -513,13 +538,24 @@ def getStates():
 
 @app.route("/getDatabaseSummary", methods=['GET', 'POST'])
 def getDatabaseSummary():
-    agents = Agents.query.count()
-    emails = Agents.query.filter(Agents.email != "").count()
-    phones = Agents.query.filter(
-        or_(Agents.officePhone != "",
-            Agents.cellPhone != "")
-    ).count()
-    return {"agents": agents, "emails": emails, "phones": phones}
+
+    db_summary_map = redis.get("db_summary_map")
+
+    if db_summary_map:
+        db_summary_map = json.loads(db_summary_map)
+    else:
+        agents = Agents.query.count()
+        emails = Agents.query.filter(Agents.email != "").count()
+        phones = Agents.query.filter(
+            or_(Agents.officePhone != "",
+                Agents.cellPhone != "")
+        ).count()
+        db_summary_map = {"agents": agents, "emails": emails, "phones": phones}
+    
+    redis.set("db_summary_map", json.dumps(db_summary_map))
+
+
+    return jsonify(db_summary_map)
 
 @app.route("/getAgentsByState", methods=['GET', 'POST'])
 def getAgentsByState():
