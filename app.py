@@ -201,6 +201,8 @@ def updateAgentInfo(cUser):
     r.officeFax = data['officeFax']
     r.cellPhone = data['cellPhone']
     db.session.commit()
+    redis_update_agents_state(data['officeState'])
+    redis_update_domain(data['email'])
 
 
     return {"result": True, "message": "Successfully Updated!"}
@@ -215,6 +217,9 @@ def removeAgent(cUser):
 
     db.session.delete(agent)
     db.session.commit()
+    redis_update_db_summary()
+    redis_update_agents_state(agent.officeState)
+    redis_update_domain(agent.email)
     
     return {"result": True, "message": "Successfully removed!"}
 
@@ -251,6 +256,9 @@ def addNewAgent(cUser):
 
         db.session.add(agent)
         db.session.commit()
+        redis_update_db_summary()
+        redis_update_agents_state(d['officeState'])
+        redis_update_domain(d['email'])
         return {"result": True, "message": "New agent successfully added"}
     else:
         return {"result": False, "message": "Existing email address"}
@@ -584,6 +592,44 @@ def getAgentsPerState(cUser,state):
         ttlAgentPerState = state_map[state]
 
     return {"ttlAgentPerState": ttlAgentPerState}
+
+
+def redis_update_db_summary():
+    db_summary_map = redis.get("db_summary_map")
+
+    if db_summary_map:
+        redis.delete("db_summary_map")
+
+def redis_update_agents_state(state):
+    state_map = redis.get("state_map")
+
+    if state_map:
+        state_map = json.loads(state_map)
+    else:
+        state_map = {}
+    
+    state_map[state] = Agents.query.filter(Agents.officeState==state).count()
+    redis.set("state_map", json.dumps(state_map))
+
+def redis_update_domain(email):
+    domain = email.split('@')[1]
+    domain_map = redis.get("domain_map")
+
+    if domain_map:
+        domain_map = json.loads(domain_map)
+    else:
+        domain_map = {}
+    
+    if domain not in COMMON_DOMAINS:
+        cnt = Agents.query.filter(Agents.email.contains(domain)).count()
+        if cnt == 0 and domain_map[domain]:
+            domain_map.pop(domain)
+        else:
+            domain_map[domain] = cnt
+    else:
+        domain_map[domain] = "-"
+
+    redis.set("domain_map", json.dumps(domain_map))
 
 #Insert mockdata to database 
 '''with open("MOCKDATA/Book1.csv", "r") as csv_file:
