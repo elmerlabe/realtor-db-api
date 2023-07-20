@@ -567,9 +567,21 @@ def getAgentsByState():
 
 @app.route("/getAgentsPerState/<state>", methods=['GET', 'POST'])
 @token_required
-def getAgentsPerState(cUser, state):
+def getAgentsPerState(cUser,state):
 
-    ttlAgentPerState = Agents.query.filter(Agents.officeState == state).count()
+    state_map = redis.get("state_map")
+
+    if state_map:
+        state_map = json.loads(state_map)
+    else:
+        state_map = {}
+
+    if state not in state_map:
+        ttlAgentPerState = Agents.query.filter(Agents.officeState == state).count()
+        state_map[state] = ttlAgentPerState
+        redis.set("state_map", json.dumps(state_map))
+    else:
+        ttlAgentPerState = state_map[state]
 
     return {"ttlAgentPerState": ttlAgentPerState}
 
