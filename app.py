@@ -11,7 +11,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS 
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, not_, distinct, func, exists
 from settings import DB_URI, SECRET, REDIS_URL
 
 app = Flask(__name__)
@@ -24,7 +24,7 @@ COMMON_DOMAINS = ["gmail.com","yahoo.com","outlook.com","aol.com","icloud.com",
     "comcast.net","verizon.net","att.net","cox.net","hotmail.com",
     "spectrum.net","gmx.com","earthlink.net","juno.com","netzero.net",
     "zoho.com","protonmail.com","mail.com","tutanota.com","fastmail.com", 
-    "msn.com", "live.com"]
+    "msn.com", "live.com", "mail.com", "ymail.com"]
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URI
 CORS(app)
@@ -594,6 +594,30 @@ def getAgentsPerState(cUser,state):
     return {"ttlAgentPerState": ttlAgentPerState}
 
 
+@app.route("/getDomains", methods=["GET"])
+def getDomains():
+    # To test
+    #domain_query = Agents.query.with_entities(func.split_part(Agents.email, "@", 2)).\
+    #    filter(func.split_part(Agents.email, "@", 2).not_in(COMMON_DOMAINS))
+
+    domain_map = redis.get("domain_map")
+
+    if domain_map:
+        domain_map = json.loads(domain_map)
+    else:
+        domain_map = {}
+    
+    obj = {}
+
+    for d in domain_map:
+        # make sure the value is a number 
+        if domain_map[d] != "-":
+            # check the value if > 25 and domain must not in the common domain list 
+            if domain_map[d] >= 25 and d not in COMMON_DOMAINS:
+                obj[d] = domain_map[d]
+
+    return jsonify(obj)
+
 def redis_update_db_summary():
     db_summary_map = redis.get("db_summary_map")
 
@@ -630,6 +654,7 @@ def redis_update_domain(email):
         domain_map[domain] = "-"
 
     redis.set("domain_map", json.dumps(domain_map))
+
 
 #Insert mockdata to database 
 '''with open("MOCKDATA/Book1.csv", "r") as csv_file:
