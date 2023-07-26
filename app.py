@@ -24,7 +24,8 @@ COMMON_DOMAINS = ["gmail.com","yahoo.com","outlook.com","aol.com","icloud.com",
     "comcast.net","verizon.net","att.net","cox.net","hotmail.com",
     "spectrum.net","gmx.com","earthlink.net","juno.com","netzero.net",
     "zoho.com","protonmail.com","mail.com","tutanota.com","fastmail.com", 
-    "msn.com", "live.com", "mail.com", "ymail.com"]
+    "msn.com", "live.com", "mail.com", "ymail.com"  ,"yahoo.ca","yahoo.co.uk",
+    "yahoo.com.ar","yahoo.com.br","yahoo.com.mx","yahoo.com.tw","yahoo.es","yahoo.fr"]
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_URI
 CORS(app)
@@ -596,27 +597,16 @@ def getAgentsPerState(cUser,state):
 
 @app.route("/getDomains", methods=["GET"])
 def getDomains():
-    # To test
-    #domain_query = Agents.query.with_entities(func.split_part(Agents.email, "@", 2)).\
-    #    filter(func.split_part(Agents.email, "@", 2).not_in(COMMON_DOMAINS))
+    split_domain = func.split_part(Agents.email, "@", 2)
+    domains_query = Agents.query.with_entities(split_domain, func.count('*')).\
+        filter(split_domain.not_in(COMMON_DOMAINS)).\
+        group_by(split_domain).having(func.count('*') >= 25)
+        
+    domains = {}
+    for domain in domains_query:
+        domains[domain[0]] = domain[1]
 
-    domain_map = redis.get("domain_map")
-
-    if domain_map:
-        domain_map = json.loads(domain_map)
-    else:
-        domain_map = {}
-    
-    obj = {}
-
-    for d in domain_map:
-        # make sure the value is a number 
-        if domain_map[d] != "-":
-            # check the value if > 25 and domain must not in the common domain list 
-            if domain_map[d] >= 25 and d not in COMMON_DOMAINS:
-                obj[d] = domain_map[d]
-
-    return jsonify(obj)
+    return jsonify(domains)
 
 def redis_update_db_summary():
     db_summary_map = redis.get("db_summary_map")
