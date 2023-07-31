@@ -113,6 +113,21 @@ def token_required(f):
 def index():
     return {"result":True, "message": "API is online"}
 
+@app.route("/signup", methods=['POST'])
+def signup():
+    d = request.json
+    has_user = Users.query.filter(Users.username==d['username']).first()
+
+    if not has_user:
+        password_hashed = generate_password_hash(d['password'], 'sha256')
+        user = Users(username=d['username'], password=password_hashed,
+                     name=d['name'], email=d['email'],)
+        db.session.add(user)
+        db.session.commit()
+
+        return {"success": True, "message": "User successfully added!"}
+    
+    return {"success": False, "message": "Existing username"}
 
 @app.route("/signin", methods=['POST'])
 def signin():
