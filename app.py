@@ -12,13 +12,13 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS 
 from sqlalchemy import or_, and_, not_, distinct, func, exists
-from settings import DB_URI, SECRET, REDIS_URL
+from settings import DATABASE_URL, SECRET, REDISCLOUD_URL
 
 app = Flask(__name__)
 app.secret_key = SECRET
 
 # redis
-redis = redis_.from_url(REDIS_URL)
+redis = redis_.from_url(REDISCLOUD_URL)
 
 COMMON_DOMAINS = ["gmail.com","yahoo.com","outlook.com","aol.com","icloud.com",
     "comcast.net","verizon.net","att.net","cox.net","hotmail.com",
@@ -27,7 +27,7 @@ COMMON_DOMAINS = ["gmail.com","yahoo.com","outlook.com","aol.com","icloud.com",
     "msn.com", "live.com", "mail.com", "ymail.com"  ,"yahoo.ca","yahoo.co.uk",
     "yahoo.com.ar","yahoo.com.br","yahoo.com.mx","yahoo.com.tw","yahoo.es","yahoo.fr"]
 
-app.config['SQLALCHEMY_DATABASE_URI'] = DB_URI
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 CORS(app)
 db = SQLAlchemy(app)
 
