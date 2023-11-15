@@ -1,5 +1,5 @@
 SECRET = "1234"
-DB_URI = 'postgresql://ozbgcokwvsybvj:eec12c42ac7092ff8457173506360c0067c4e13033f5309a5b417a11f9a3d63c@ec2-34-236-103-63.compute-1.amazonaws.com:5432/d6g2vlve0oi6hl'
+DB_URI = 'postgresql://wycodvnpcuqwvf:a3b128783ab4d9efc90047148f60bb10b3f2c8de0ca6b47837b90bafff44faee@ec2-44-215-211-215.compute-1.amazonaws.com:5432/db0a0oquaencvt'
 REDIS_URL = 'redis://default:qvoX5SJBGLBrFuI1vyJL8zquI7w7CwFp@redis-12504.c10.us-east-1-4.ec2.cloud.redislabs.com:12504'
 
 #DB_URI = 'postgresql://postgres:root@localhost:5432/realtors-db' # local database
