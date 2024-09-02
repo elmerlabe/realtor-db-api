@@ -507,7 +507,10 @@ def exportCSV():
     state = request.args.get('state')
     city = request.args.get('city')
     
-    filename = state + "_" + city + ".csv"
+    if not city:
+        filename = state + ".csv"
+    else:
+        filename = state + "_" + city + ".csv"
 
     if state and not city:
         query = Agents.query.filter(Agents.officeState==state).all()
@@ -518,14 +521,20 @@ def exportCSV():
 
     with open('agentData.csv', 'w', encoding='UTF8', newline='') as f:
         cnt = 0
-        header = ["#", "email", "firstName", "middleName", "lastName", "suffix", "officeName", "officeAddress1", "officeAddress2",
+        header = ["#", "email", "website", "firstName", "middleName", "lastName", "suffix", "officeName", "officeAddress1", "officeAddress2",
                         "officeCity", "officeState", "officeZip", "officeCountry","officePhone", "officeFax", "cellPhone"]
         writer = csv.writer(f)
         writer.writerow(header)
 
         for a in query:
             cnt +=1
-            data = [cnt, a.email, a.firstName, a.middleName, a.lastName, a.suffix, a.officeName, a.officeAddress1, a.officeAddress2,
+            domain = a.email.split('@')[1]
+            website = ''
+
+            if domain not in COMMON_DOMAINS:
+                website = 'www.' + domain
+      
+            data = [cnt, a.email, website, a.firstName, a.middleName, a.lastName, a.suffix, a.officeName, a.officeAddress1, a.officeAddress2,
                     a.officeCity, a.officeState, a.officeZip, a.officeCountry, a.officePhone, a.officeFax, a.cellPhone]
             
             writer.writerow(data)
